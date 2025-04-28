@@ -1,8 +1,31 @@
 # src/persistence.py
 import json
 import os
+import logging
+from .persistence_mongodb import save_data_to_mongodb, load_data_from_mongodb
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Flag để chọn loại lưu trữ
+USE_MONGODB = True  # Set to False để sử dụng JSON
 
 def save_data(video_manager, filename="data/video_data.json"):
+    """Lưu dữ liệu từ VideoManager"""
+    if USE_MONGODB:
+        return save_data_to_mongodb(video_manager)
+    else:
+        return save_data_to_json(video_manager, filename)
+
+def load_data(filename="data/video_data.json"):
+    """Tải dữ liệu vào VideoManager"""
+    if USE_MONGODB:
+        return load_data_from_mongodb()
+    else:
+        return load_data_from_json(filename)
+
+def save_data_to_json(video_manager, filename="data/video_data.json"):
     """Lưu dữ liệu từ VideoManager xuống file JSON"""
     data = {
         "videos": {},
@@ -31,16 +54,21 @@ def save_data(video_manager, filename="data/video_data.json"):
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     
     # Lưu xuống file
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4)
-    
-    return True
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+        logger.info(f"Đã lưu dữ liệu vào file JSON: {filename}")
+        return True
+    except Exception as e:
+        logger.error(f"Lỗi khi lưu file JSON: {e}")
+        return False
 
-def load_data(filename="data/video_data.json"):
+def load_data_from_json(filename="data/video_data.json"):
     """Tải dữ liệu từ file JSON vào VideoManager mới"""
     from .database import VideoManager
     
     if not os.path.exists(filename):
+        logger.warning(f"File không tồn tại: {filename}")
         return None
     
     try:
@@ -69,7 +97,8 @@ def load_data(filename="data/video_data.json"):
                 segment["end_frame"]
             )
         
+        logger.info(f"Đã tải dữ liệu từ file JSON: {filename}")
         return manager
     except Exception as e:
-        print(f"Lỗi khi tải dữ liệu: {e}")
+        logger.error(f"Lỗi khi tải dữ liệu JSON: {e}")
         return None

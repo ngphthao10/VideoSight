@@ -1,4 +1,9 @@
 from .models import FrameSegmentTree
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 class VideoManager:
     def __init__(self):
@@ -111,6 +116,125 @@ class VideoManager:
             name, frames, _ = self.videos[video_id]
             return (video_id, name, frames)
         return None
+    
+    def delete_video(self, video_id):
+        """Xóa video và tất cả phân đoạn liên quan"""
+        if video_id not in self.videos:
+            return False
+        
+        # Xóa video
+        del self.videos[video_id]
+        
+        # Xóa các phân đoạn liên quan
+        self.segments = [(vid, oid, start, end) for vid, oid, start, end in self.segments if vid != video_id]
+        
+        logger.info(f"Đã xóa video ID: {video_id} và các phân đoạn liên quan")
+        return True
+    
+    def delete_object(self, object_id):
+        """Xóa đối tượng và tất cả phân đoạn liên quan"""
+        if object_id not in self.objects:
+            return False
+        
+        # Xóa đối tượng
+        del self.objects[object_id]
+        
+        # Xóa các phân đoạn liên quan
+        self.segments = [(vid, oid, start, end) for vid, oid, start, end in self.segments if oid != object_id]
+        
+        # Cập nhật cây phân đoạn
+        for vid, (_, _, tree) in self.videos.items():
+            # Làm mới cây phân đoạn cho mỗi video
+            _, frames, _ = self.videos[vid]
+            new_tree = FrameSegmentTree(frames)
+            
+            # Thêm lại các phân đoạn không liên quan đến đối tượng đã xóa
+            for segment_vid, segment_oid, start, end in self.segments:
+                if segment_vid == vid:
+                    new_tree.insert_object(segment_oid, start, end)
+            
+            # Cập nhật cây
+            self.videos[vid] = (self.videos[vid][0], self.videos[vid][1], new_tree)
+        
+        logger.info(f"Đã xóa đối tượng ID: {object_id} và các phân đoạn liên quan")
+        return True
+    
+    def delete_segment(self, video_id, object_id, start_frame, end_frame):
+        """Xóa một phân đoạn cụ thể"""
+        segment = (video_id, object_id, start_frame, end_frame)
+        if segment not in self.segments:
+            return False
+        
+        # Xóa phân đoạn
+        self.segments.remove(segment)
+        
+        # Cập nhật cây phân đoạn
+        if video_id in self.videos:
+            # Tạo cây mới
+            _, frames, _ = self.videos[video_id]
+            new_tree = FrameSegmentTree(frames)
+            
+            # Thêm lại tất cả phân đoạn ngoại trừ phân đoạn bị xóa
+            for seg_vid, seg_oid, seg_start, seg_end in self.segments:
+                if seg_vid == video_id:
+                    new_tree.insert_object(seg_oid, seg_start, seg_end)
+            
+            # Cập nhật cây
+            self.videos[video_id] = (self.videos[video_id][0], self.videos[video_id][1], new_tree)
+        
+        logger.info(f"Đã xóa phân đoạn: Video {video_id}, Đối tượng {object_id}, Frames {start_frame}-{end_frame}")
+        return True
+    
+    def update_video(self, video_id, new_name=None, new_frames=None):
+        """Cập nhật thông tin video"""
+        if video_id not in self.videos:
+            return False
+        
+        name, frames, tree = self.videos[video_id]
+        
+        if new_name is not None:
+            name = new_name
+        
+        if new_frames is not None and new_frames != frames:
+            # Nếu số frame thay đổi, cần tạo lại cây phân đoạn
+            frames = new_frames
+            tree = FrameSegmentTree(frames)
+            
+            # Thêm lại tất cả các phân đoạn
+            for seg_vid, seg_oid, seg_start, seg_end in self.segments:
+                if seg_vid == video_id:
+                    if seg_end <= frames:  # Chỉ thêm nếu phân đoạn nằm trong khoảng frame mới
+                        tree.insert_object(seg_oid, seg_start, seg_end)
+                    else:
+                        # Cắt bớt phân đoạn nếu vượt quá số frame mới
+                        new_end = min(seg_end, frames)
+                        if seg_start < new_end:
+                            tree.insert_object(seg_oid, seg_start, new_end)
+        
+        # Cập nhật thông tin video
+        self.videos[video_id] = (name, frames, tree)
+        
+        logger.info(f"Đã cập nhật video ID: {video_id}, Tên: {name}, Frames: {frames}")
+        return True
+    
+    def update_object(self, object_id, new_name=None, new_type=None):
+        """Cập nhật thông tin đối tượng"""
+        if object_id not in self.objects:
+            return False
+        
+        name, obj_type = self.objects[object_id]
+        
+        if new_name is not None:
+            name = new_name
+        
+        if new_type is not None:
+            obj_type = new_type
+        
+        # Cập nhật thông tin đối tượng
+        self.objects[object_id] = (name, obj_type)
+        
+        logger.info(f"Đã cập nhật đối tượng ID: {object_id}, Tên: {name}, Loại: {obj_type}")
+        return True
 
     def visualize_tree(self, video_id):
         """Hiển thị cấu trúc Frame Segment Tree của một video"""
@@ -121,3 +245,71 @@ class VideoManager:
         _, _, tree = self.videos[video_id]
         visualize_tree(tree)
         return True
+        
+    def search_videos_by_name(self, name_part):
+        """Tìm kiếm video theo tên (tìm kiếm mờ)"""
+        results = []
+        name_part = name_part.lower()
+        
+        for vid, (name, frames, _) in self.videos.items():
+            if name_part in name.lower():
+                results.append((vid, name, frames))
+        
+        return results
+    
+    def search_objects_by_name(self, name_part):
+        """Tìm kiếm đối tượng theo tên (tìm kiếm mờ)"""
+        results = []
+        name_part = name_part.lower()
+        
+        for oid, (name, obj_type) in self.objects.items():
+            if name_part in name.lower():
+                results.append((oid, name, obj_type))
+        
+        return results
+    
+    def search_objects_by_type(self, object_type):
+        """Tìm kiếm đối tượng theo loại"""
+        results = []
+        object_type = object_type.lower()
+        
+        for oid, (name, type_) in self.objects.items():
+            if object_type in type_.lower():
+                results.append((oid, name, type_))
+        
+        return results
+    
+    def get_object_statistics(self):
+        """Lấy thống kê về số lượng đối tượng theo loại"""
+        stats = {}
+        
+        for _, (_, obj_type) in self.objects.items():
+            if obj_type in stats:
+                stats[obj_type] += 1
+            else:
+                stats[obj_type] = 1
+        
+        return stats
+    
+    def get_video_statistics(self):
+        """Lấy thống kê về các video (số đối tượng, số phân đoạn)"""
+        stats = {}
+        
+        for vid, (name, frames, _) in self.videos.items():
+            # Đếm số đối tượng xuất hiện trong video
+            unique_objects = set()
+            segment_count = 0
+            
+            for segment_vid, segment_oid, _, _ in self.segments:
+                if segment_vid == vid:
+                    unique_objects.add(segment_oid)
+                    segment_count += 1
+            
+            stats[vid] = {
+                "name": name,
+                "frames": frames,
+                "object_count": len(unique_objects),
+                "segment_count": segment_count
+            }
+        
+        return stats
