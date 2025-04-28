@@ -1,0 +1,86 @@
+{
+    "videos": {
+        "1": {
+            "name": "Surveillance Video 1",
+            "frames": 1000
+        },
+        "2": {
+            "name": "Educational Video",
+            "frames": 1500
+        },
+        "3": {
+            "name": "Demo Video",
+            "frames": 1000
+        }
+    },
+    "objects": {
+        "1": {
+            "name": "Denis Dopeman",
+            "type": "Person"
+        },
+        "2": {
+            "name": "Jane Shady",
+            "type": "Person"
+        },
+        "3": {
+            "name": "Briefcase",
+            "type": "Object"
+        },
+        "4": {
+            "name": "Car",
+            "type": "Vehicle"
+        },
+        "5": {
+            "name": "Professor",
+            "type": "Person"
+        },
+        "6": {
+            "name": "Thao",
+            "type": "Person"
+        }
+    },
+    "segments": [
+        {
+            "video_id": 1,
+            "object_id": 1,
+            "start_frame": 250,
+            "end_frame": 750
+        },
+        {
+            "video_id": 1,
+            "object_id": 1,
+            "start_frame": 900,
+            "end_frame": 950
+        },
+        {
+            "video_id": 1,
+            "object_id": 2,
+            "start_frame": 100,
+            "end_frame": 400
+        },
+        {
+            "video_id": 1,
+            "object_id": 2,
+            "start_frame": 600,
+            "end_frame": 800
+        },
+        {
+            "video_id": 1,
+            "object_id": 3,
+            "start_frame": 300,
+            "end_frame": 500
+        },
+        {
+            "video_id": 1,
+            "object_id": 4,
+            "start_frame": 50,
+            "end_frame": 200
+        },
+        {
+            "video_id": 2,
+            "object_id": 5,
+            "start_frame": 100,
+            "end_frame": 1400
+        }
+    ]
+}
