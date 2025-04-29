@@ -1,4 +1,3 @@
-# src/visualize.py
 def print_tree_node(node, level=0, prefix="Root: "):
     """In cấu trúc của cây theo dạng văn bản"""
     if node is None:

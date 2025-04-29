@@ -66,6 +66,5 @@ class MongoDBClient:
     def get_segment_collection(self):
         return self.segments
 
-# Hàm tiện ích để lấy instance của MongoDB
 def get_mongodb_client():
     return MongoDBClient()

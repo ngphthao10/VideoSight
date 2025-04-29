@@ -1,4 +1,3 @@
-# src/utils.py
 def generate_report(video_manager, filename="report.txt"):
     """Tạo báo cáo thống kê về dữ liệu video"""
     with open(filename, 'w', encoding='utf-8') as f:

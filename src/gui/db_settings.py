@@ -1,4 +1,3 @@
-# src/gui/db_settings.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 import re

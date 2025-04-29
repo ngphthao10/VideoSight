@@ -1,4 +1,3 @@
-# src/persistence_mongodb.py
 import logging
 from .mongodb import get_mongodb_client
 

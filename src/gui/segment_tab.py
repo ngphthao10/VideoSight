@@ -1,4 +1,3 @@
-# src/gui/segment_tab.py
 import tkinter as tk
 from tkinter import ttk, messagebox
 import logging

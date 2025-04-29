@@ -1,4 +1,3 @@
-# src/realtime_detection.py
 import cv2
 import torch
 import numpy as np
